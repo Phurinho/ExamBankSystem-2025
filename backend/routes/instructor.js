@@ -1,0 +1,394 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../db');
+const { authenticateToken, requireInstructor } = require('../middleware/auth');
+
+// ใช้ middleware ทุก route
+router.use(authenticateToken);
+router.use(requireInstructor);
+
+// GET /api/instructor/dashboard - แสดงข้อสอบทั้งหมดของอาจารย์
+router.get('/dashboard', async (req, res) => {
+  try {
+    const [exams] = await db.query(
+      `SELECT e.ExamID, e.ExamName, c.CourseCode, c.CourseName, 
+              t.TopicName, e.Status, e.UpdatedAt
+       FROM Exams e
+       JOIN Courses c ON e.CourseID = c.CourseID
+       JOIN Topics t ON e.TopicID = t.TopicID
+       WHERE e.InstructorID = ?
+       ORDER BY e.UpdatedAt DESC`,
+      [req.user.userId]
+    );
+
+    res.json({ exams });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// GET /api/instructor/search?q=keyword - ค้นหาข้อสอบ
+router.get('/search', async (req, res) => {
+  try {
+    const keyword = req.query.q || '';
+    
+    const [exams] = await db.query(
+      `SELECT e.ExamID, e.ExamName, c.CourseCode, c.CourseName, 
+              t.TopicName, e.Status, e.UpdatedAt
+       FROM Exams e
+       JOIN Courses c ON e.CourseID = c.CourseID
+       JOIN Topics t ON e.TopicID = t.TopicID
+       WHERE e.InstructorID = ?
+       AND (e.ExamName LIKE ? OR c.CourseName LIKE ? OR t.TopicName LIKE ?)
+       ORDER BY e.UpdatedAt DESC`,
+      [req.user.userId, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`]
+    );
+
+    res.json({ exams });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// GET /api/instructor/exam/:examId - ดูรายละเอียดข้อสอบ
+router.get('/exam/:examId', async (req, res) => {
+  try {
+    const { examId } = req.params;
+
+    // ดึงข้อมูล exam
+    const [exams] = await db.query(
+      `SELECT e.*, c.CourseCode, c.CourseName, t.TopicName
+       FROM Exams e
+       JOIN Courses c ON e.CourseID = c.CourseID
+       JOIN Topics t ON e.TopicID = t.TopicID
+       WHERE e.ExamID = ? AND e.InstructorID = ?`,
+      [examId, req.user.userId]
+    );
+
+    if (exams.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบข้อสอบนี้' });
+    }
+
+    // ดึงคำถามและตัวเลือก
+    const [questions] = await db.query(
+      `SELECT q.QuestionID, q.QuestionText, q.OrderIndex, q.Points,
+              qt.TypeCode, qt.TypeName,
+              dl.LevelCode, dl.LevelName
+       FROM Questions q
+       JOIN QuestionTypes qt ON q.TypeID = qt.TypeID
+       JOIN DifficultyLevels dl ON q.DifficultyID = dl.DifficultyID
+       WHERE q.ExamID = ?
+       ORDER BY q.OrderIndex`,
+      [examId]
+    );
+
+    // ดึง choices สำหรับแต่ละคำถาม
+    for (let question of questions) {
+      const [choices] = await db.query(
+        `SELECT ChoiceID, ChoiceNo, ChoiceText, IsCorrect
+         FROM Choices
+         WHERE QuestionID = ?
+         ORDER BY ChoiceNo`,
+        [question.QuestionID]
+      );
+      question.choices = choices;
+    }
+
+    res.json({
+      exam: exams[0],
+      questions: questions
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// POST /api/instructor/exam - สร้างข้อสอบใหม่
+router.post('/exam', async (req, res) => {
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    const { examName, courseCode, courseName, topicName, questions, status } = req.body;
+
+    // สร้างหรือหา Course
+    let [courses] = await connection.query(
+      'SELECT CourseID FROM Courses WHERE CourseCode = ?',
+      [courseCode]
+    );
+
+    let courseId;
+    if (courses.length === 0) {
+      const [result] = await connection.query(
+        'INSERT INTO Courses (CourseCode, CourseName) VALUES (?, ?)',
+        [courseCode, courseName]
+      );
+      courseId = result.insertId;
+    } else {
+      courseId = courses[0].CourseID;
+    }
+
+    // สร้างหรือหา Topic
+    let [topics] = await connection.query(
+      'SELECT TopicID FROM Topics WHERE CourseID = ? AND TopicName = ?',
+      [courseId, topicName]
+    );
+
+    let topicId;
+    if (topics.length === 0) {
+      const [result] = await connection.query(
+        'INSERT INTO Topics (CourseID, TopicName) VALUES (?, ?)',
+        [courseId, topicName]
+      );
+      topicId = result.insertId;
+    } else {
+      topicId = topics[0].TopicID;
+    }
+
+    // สร้าง Exam
+    const [examResult] = await connection.query(
+      `INSERT INTO Exams (ExamName, CourseID, TopicID, InstructorID, Status)
+       VALUES (?, ?, ?, ?, ?)`,
+      [examName, courseId, topicId, req.user.userId, status || 'draft']
+    );
+
+    const examId = examResult.insertId;
+
+    // เพิ่มคำถาม
+    if (questions && questions.length > 0) {
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        
+        // หา TypeID
+        const [types] = await connection.query(
+          'SELECT TypeID FROM QuestionTypes WHERE TypeCode = ?',
+          [q.typeCode]
+        );
+        
+        // หา DifficultyID
+        const [difficulties] = await connection.query(
+          'SELECT DifficultyID FROM DifficultyLevels WHERE LevelCode = ?',
+          [q.difficulty]
+        );
+
+        // เพิ่มคำถาม
+        const [qResult] = await connection.query(
+          `INSERT INTO Questions (ExamID, TopicID, TypeID, DifficultyID, InstructorID, 
+                                   QuestionText, Points, OrderIndex)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [examId, topicId, types[0].TypeID, difficulties[0].DifficultyID, 
+           req.user.userId, q.questionText, q.points || 1, i]
+        );
+
+        const questionId = qResult.insertId;
+
+        // เพิ่ม choices
+        if (q.choices && q.choices.length > 0) {
+          for (let j = 0; j < q.choices.length; j++) {
+            const choice = q.choices[j];
+            await connection.query(
+              `INSERT INTO Choices (QuestionID, ChoiceNo, ChoiceText, IsCorrect)
+               VALUES (?, ?, ?, ?)`,
+              [questionId, j + 1, choice.text, choice.isCorrect ? 1 : 0]
+            );
+          }
+        }
+      }
+    }
+
+    await connection.commit();
+    res.status(201).json({ 
+      message: 'สร้างข้อสอบสำเร็จ',
+      examId: examId 
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error(error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสร้างข้อสอบ' });
+  } finally {
+    connection.release();
+  }
+});
+
+// PUT /api/instructor/exam/:examId - แก้ไขข้อสอบ
+router.put('/exam/:examId', async (req, res) => {
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    const { examId } = req.params;
+    const { examName, status, questions } = req.body;
+
+    // เช็คว่าเป็นข้อสอบของอาจารย์คนนี้หรือไม่
+    const [exams] = await connection.query(
+      'SELECT * FROM Exams WHERE ExamID = ? AND InstructorID = ?',
+      [examId, req.user.userId]
+    );
+
+    if (exams.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบข้อสอบนี้' });
+    }
+
+    // อัพเดท exam
+    await connection.query(
+      'UPDATE Exams SET ExamName = ?, Status = ? WHERE ExamID = ?',
+      [examName || exams[0].ExamName, status || exams[0].Status, examId]
+    );
+
+    // ถ้ามีการอัพเดทคำถาม ให้ลบคำถามเก่าแล้วเพิ่มใหม่
+    if (questions) {
+      // ลบคำถามเก่า (Choices จะถูกลบอัตโนมัติเพราะมี ON DELETE CASCADE)
+      await connection.query('DELETE FROM Questions WHERE ExamID = ?', [examId]);
+
+      // เพิ่มคำถามใหม่ (ใช้โค้ดเดียวกับตอนสร้าง)
+      const exam = exams[0];
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        
+        const [types] = await connection.query(
+          'SELECT TypeID FROM QuestionTypes WHERE TypeCode = ?',
+          [q.typeCode]
+        );
+        
+        const [difficulties] = await connection.query(
+          'SELECT DifficultyID FROM DifficultyLevels WHERE LevelCode = ?',
+          [q.difficulty]
+        );
+
+        const [qResult] = await connection.query(
+          `INSERT INTO Questions (ExamID, TopicID, TypeID, DifficultyID, InstructorID, 
+                                   QuestionText, Points, OrderIndex)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [examId, exam.TopicID, types[0].TypeID, difficulties[0].DifficultyID, 
+           req.user.userId, q.questionText, q.points || 1, i]
+        );
+
+        const questionId = qResult.insertId;
+
+        if (q.choices && q.choices.length > 0) {
+          for (let j = 0; j < q.choices.length; j++) {
+            const choice = q.choices[j];
+            await connection.query(
+              `INSERT INTO Choices (QuestionID, ChoiceNo, ChoiceText, IsCorrect)
+               VALUES (?, ?, ?, ?)`,
+              [questionId, j + 1, choice.text, choice.isCorrect ? 1 : 0]
+            );
+          }
+        }
+      }
+    }
+
+    await connection.commit();
+    res.json({ message: 'แก้ไขข้อสอบสำเร็จ' });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error(error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการแก้ไขข้อสอบ' });
+  } finally {
+    connection.release();
+  }
+});
+
+// DELETE /api/instructor/exam/:examId - ลบข้อสอบ
+router.delete('/exam/:examId', async (req, res) => {
+  try {
+    const { examId } = req.params;
+
+    const [result] = await db.query(
+      'DELETE FROM Exams WHERE ExamID = ? AND InstructorID = ?',
+      [examId, req.user.userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'ไม่พบข้อสอบนี้' });
+    }
+
+    res.json({ message: 'ลบข้อสอบสำเร็จ' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// GET /api/instructor/profile - ดูโปรไฟล์
+router.get('/profile', async (req, res) => {
+  try {
+    const [users] = await db.query(
+      'SELECT UserID, Username, Email, Department, Role FROM Users WHERE UserID = ?',
+      [req.user.userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
+    }
+
+    res.json({ user: users[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// PUT /api/instructor/profile - แก้ไขโปรไฟล์
+router.put('/profile', async (req, res) => {
+  try {
+    const { username, email, password, department } = req.body;
+
+    let query = 'UPDATE Users SET ';
+    let params = [];
+    let updates = [];
+
+    if (username) {
+      updates.push('Username = ?');
+      params.push(username);
+    }
+    if (email) {
+      updates.push('Email = ?');
+      params.push(email);
+    }
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updates.push('Password = ?');
+      params.push(hashedPassword);
+    }
+    if (department) {
+      updates.push('Department = ?');
+      params.push(department);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'ไม่มีข้อมูลที่ต้องการอัพเดท' });
+    }
+
+    query += updates.join(', ') + ' WHERE UserID = ?';
+    params.push(req.user.userId);
+
+    await db.query(query, params);
+
+    res.json({ message: 'อัพเดทโปรไฟล์สำเร็จ' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// DELETE /api/instructor/profile - ลบบัญชี
+router.delete('/profile', async (req, res) => {
+  try {
+    await db.query('DELETE FROM Users WHERE UserID = ?', [req.user.userId]);
+    res.json({ message: 'ลบบัญชีสำเร็จ' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+module.exports = router;

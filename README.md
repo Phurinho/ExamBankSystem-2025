@@ -1,37 +1,15 @@
-# ExamBankSystem-2025
-Online Exam Bank System - Database Project (3 members)
-# ExamBankSystem-2025
+# 1. ติดตั้ง
+npm install bcrypt bcryptjs cors dotenv express express-rate-limit helmet jsonwebtoken morgan mysql2
 
-### 🧠 Online Exam Bank System
-Database Project for managing and generating exam questions by subject, lesson, difficulty, and type.
+# 2. (ทางเลือก) ติด nodemon สำหรับ dev
+npm install --save-dev nodemon
 
----
 
-### 📁 Structure
-- **/Database** → SQL Scripts (DDL, DML, Complex Queries)
-- **/Frontend** → ASP.NET Web Forms (.aspx)
-- **/Backend** → C# code-behind and database logic
-- **/Docs** → ER Diagram, Schema, and Reports
+.env structure in backend
+PORT=3000
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=your_pass
+DB_NAME=
 
----
-
-### 👥 Team Members
-- Phurin (Frontend Developer)
-- [Name 2] (Backend Developer)
-- [Name 3] (Database Designer)
-
----
-
-### ⚙️ Tech Stack
-- Visual Studio 2022 (.NET Framework / ASP.NET)
-- SQL Server Management Studio 20
-- Git & GitHub for version control
-
----
-
-### 🧩 How to Run
-1. Clone repository  
-2. Restore database using `/Database/ExamBank.sql`  
-3. Open project in Visual Studio  
-4. Update connection string in `Web.config`  
-5. Run via IIS Express
+JWT_SECRET= node -e "console.log(require('crypto').randomBytes(32).toString('base64'))" ลองรัน

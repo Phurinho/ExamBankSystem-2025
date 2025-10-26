@@ -416,3 +416,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+backend/.env
+backend/package-lock.json
+backend/package.json
