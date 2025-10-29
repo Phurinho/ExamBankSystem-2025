@@ -160,7 +160,7 @@ curl -X POST http://localhost:3000/auth/login \
 
 > **⚠️ ต้องมี Token และ Role = instructor**
 
-### 3. Get Dashboard (ดูข้อสอบทั้งหมด)
+### 3. Get Dashboard (ดูข้อสอบทั้งหมด) ⭐
 
 แสดงรายการข้อสอบทั้งหมดของอาจารย์
 
@@ -183,6 +183,7 @@ GET /instructor/dashboard
     {
       "ExamID": 1,
       "ExamName": "Midterm Exam",
+      "CategoryName": "Computer Science", // ⭐
       "CourseCode": "CS101",
       "CourseName": "Introduction to Programming",
       "TopicName": "Variables and Data Types",
@@ -192,6 +193,7 @@ GET /instructor/dashboard
     {
       "ExamID": 2,
       "ExamName": "Final Exam",
+      "CategoryName": "Mathematics", // ⭐
       "CourseCode": "CS101",
       "CourseName": "Introduction to Programming",
       "TopicName": "Functions",
@@ -210,9 +212,9 @@ curl -X GET http://localhost:3000/instructor/dashboard \
 
 ---
 
-### 4. Search Exams (ค้นหาข้อสอบ)
+### 4. Search Exams (ค้นหาข้อสอบ) ⭐
 
-ค้นหาข้อสอบจาก ExamName, CourseName หรือ TopicName
+ค้นหาข้อสอบจาก ExamName, CourseName, TopicName หรือ CategoryName
 
 **Endpoint:**
 ```
@@ -241,6 +243,7 @@ GET /instructor/search?q=midterm
     {
       "ExamID": 1,
       "ExamName": "Midterm Exam",
+      "CategoryName": "Computer Science", // ⭐
       "CourseCode": "CS101",
       "CourseName": "Introduction to Programming",
       "TopicName": "Variables and Data Types",
@@ -259,7 +262,7 @@ curl -X GET "http://localhost:3000/instructor/search?q=midterm" \
 
 ---
 
-### 5. View Exam Detail (ดูรายละเอียดข้อสอบ)
+### 5. View Exam Detail (ดูรายละเอียดข้อสอบ) ⭐
 
 ดูข้อสอบพร้อมคำถามและคำตอบทั้งหมด
 
@@ -292,7 +295,9 @@ GET /instructor/exam/1
     "Status": "published",
     "CourseCode": "CS101",
     "CourseName": "Introduction to Programming",
-    "TopicName": "Variables and Data Types"
+    "TopicName": "Variables and Data Types",
+    "CategoryName": "Computer Science", // ⭐
+    "CategoryID": 1 // ⭐
   },
   "questions": [
     {
@@ -364,7 +369,7 @@ curl -X GET http://localhost:3000/instructor/exam/1 \
 
 ---
 
-### 6. Create Exam (สร้างข้อสอบ)
+### 6. Create Exam (สร้างข้อสอบ) ⭐
 
 สร้างข้อสอบใหม่พร้อมคำถาม
 
@@ -385,6 +390,7 @@ POST /instructor/exam
 ```json
 {
   "examName": "Midterm Exam",
+  "categoryName": "Computer Science", // ⭐
   "courseCode": "CS101",
   "courseName": "Introduction to Programming",
   "topicName": "Variables and Data Types",
@@ -406,10 +412,6 @@ POST /instructor/exam
         },
         {
           "text": "A loop",
-          "isCorrect": false
-        },
-        {
-          "text": "A class",
           "isCorrect": false
         }
       ]
@@ -436,6 +438,7 @@ POST /instructor/exam
 
 **Field Descriptions:**
 - `examName` (string, required) - ชื่อข้อสอบ
+- `categoryName` (string, optional) - ⭐ ชื่อหมวดหมู่วิชา
 - `courseCode` (string, required) - รหัสวิชา เช่น CS101
 - `courseName` (string, required) - ชื่อวิชา
 - `topicName` (string, required) - หัวข้อ
@@ -464,6 +467,7 @@ curl -X POST http://localhost:3000/instructor/exam \
   -H "Content-Type: application/json" \
   -d '{
     "examName": "Midterm Exam",
+    "categoryName": "Computer Science",
     "courseCode": "CS101",
     "courseName": "Introduction to Programming",
     "topicName": "Variables and Data Types",
@@ -486,7 +490,7 @@ curl -X POST http://localhost:3000/instructor/exam \
 
 ---
 
-### 7. Update Exam (แก้ไขข้อสอบ)
+### 7. Update Exam (แก้ไขข้อสอบ) ⭐
 
 แก้ไขข้อสอบที่มีอยู่
 
@@ -507,6 +511,7 @@ PUT /instructor/exam/:examId
 ```json
 {
   "examName": "Midterm Exam (Updated)",
+  "categoryName": "Information Technology", // ⭐
   "status": "published",
   "questions": [
     {
@@ -701,7 +706,7 @@ curl -X DELETE http://localhost:3000/instructor/profile \
 
 > **⚠️ ต้องมี Token และ Role = student**
 
-### 12. Get Dashboard (ดูข้อสอบและคะแนน)
+### 12. Get Dashboard (ดูข้อสอบและคะแนน) ⭐
 
 แสดงข้อสอบทั้งหมดพร้อมคะแนนล่าสุด
 
@@ -724,6 +729,7 @@ GET /student/dashboard
     {
       "ExamID": 1,
       "ExamName": "Midterm Exam",
+      "CategoryName": "Computer Science", // ⭐
       "CourseCode": "CS101",
       "CourseName": "Introduction to Programming",
       "TopicName": "Variables and Data Types",
@@ -737,6 +743,7 @@ GET /student/dashboard
     {
       "ExamID": 2,
       "ExamName": "Final Exam",
+      "CategoryName": "Mathematics", // ⭐
       "CourseCode": "CS101",
       "CourseName": "Introduction to Programming",
       "TopicName": "Functions",
@@ -759,9 +766,9 @@ curl -X GET http://localhost:3000/student/dashboard \
 
 ---
 
-### 13. Search Exams (ค้นหาข้อสอบ)
+### 13. Search Exams (ค้นหาข้อสอบ) ⭐
 
-ค้นหาข้อสอบจาก ExamName, CourseName หรือ TopicName
+ค้นหาข้อสอบจาก ExamName, CourseName, TopicName หรือ CategoryName
 
 **Endpoint:**
 ```
@@ -790,6 +797,7 @@ GET /student/search?q=midterm
     {
       "ExamID": 1,
       "ExamName": "Midterm Exam",
+      "CategoryName": "Computer Science", // ⭐
       "CourseCode": "CS101",
       "CourseName": "Introduction to Programming",
       "TopicName": "Variables and Data Types",
@@ -811,7 +819,7 @@ curl -X GET "http://localhost:3000/student/search?q=midterm" \
 
 ---
 
-### 14. View Exam (ดูข้อสอบเพื่อทำ)
+### 14. View Exam (ดูข้อสอบเพื่อทำ) ⭐
 
 ดูคำถามข้อสอบ (ไม่แสดงเฉลย)
 
@@ -844,7 +852,8 @@ GET /student/exam/1
     "Status": "published",
     "CourseCode": "CS101",
     "CourseName": "Introduction to Programming",
-    "TopicName": "Variables and Data Types"
+    "TopicName": "Variables and Data Types",
+    "CategoryName": "Computer Science" // ⭐
   },
   "questions": [
     {
@@ -977,7 +986,7 @@ curl -X POST http://localhost:3000/student/exam/1/submit \
 
 ---
 
-### 16. View Result (ดูเฉลย)
+### 16. View Result (ดูเฉลย) ⭐
 
 ดูเฉลยพร้อมคำตอบที่ตอบไป
 
@@ -1006,7 +1015,8 @@ GET /student/exam/1/result/1
     "ExamName": "Midterm Exam",
     "CourseCode": "CS101",
     "CourseName": "Introduction to Programming",
-    "TopicName": "Variables and Data Types"
+    "TopicName": "Variables and Data Types",
+    "CategoryName": "Computer Science" // ⭐
   },
   "attempt": {
     "attemptId": 1,
@@ -1207,7 +1217,7 @@ curl -X DELETE http://localhost:3000/student/profile \
 
 ---
 
-## ❌ Error Responses
+## ⚠ Error Responses
 
 ### Common Error Codes
 
@@ -1287,6 +1297,7 @@ curl -X POST http://localhost:3000/instructor/exam \
   -H "Content-Type: application/json" \
   -d '{
     "examName": "Programming Fundamentals Quiz",
+    "categoryName": "Computer Science",
     "courseCode": "CS101",
     "courseName": "Introduction to Programming",
     "topicName": "Basic Concepts",
@@ -1611,6 +1622,7 @@ EXAM_RESPONSE=$(curl -s -X POST $BASE_URL/instructor/exam \
   -H "Content-Type: application/json" \
   -d '{
     "examName": "Test Exam",
+    "categoryName": "Computer Science",
     "courseCode": "TEST101",
     "courseName": "Testing Course",
     "topicName": "Testing Topic",
@@ -1663,85 +1675,34 @@ chmod +x test_api.sh
 
 ## 📝 Changelog
 
-**Version 1.0.0** (2025-10-27)
+### Version 1.1.0 (2025-10-30) ⭐ CURRENT
+
+**Added:**
+- เพิ่ม `CategoryName` field ใน response ของทุก endpoint ที่แสดงข้อมูลข้อสอบ
+- เพิ่มการค้นหาด้วย `CategoryName` ใน search endpoints
+- เพิ่ม `CategoryID` ใน instructor exam detail endpoint
+- เพิ่มการรองรับ `categoryName` ใน POST /instructor/exam
+- เพิ่มการรองรับ `categoryName` ใน PUT /instructor/exam/:examId
+
+**Updated Endpoints:**
+- ⭐ GET /instructor/dashboard
+- ⭐ GET /instructor/search
+- ⭐ GET /instructor/exam/:examId
+- ⭐ POST /instructor/exam
+- ⭐ PUT /instructor/exam/:examId
+- ⭐ GET /student/dashboard
+- ⭐ GET /student/search
+- ⭐ GET /student/exam/:examId
+- ⭐ GET /student/exam/:examId/result/:attemptId
+
+---
+
+### Version 1.0.0 (2025-10-27)
 - Initial release
 - Auth endpoints (Register, Login)
 - Instructor endpoints (Dashboard, Create/Update/Delete Exam, Profile)
 - Student endpoints (Dashboard, Take Exam, Submit, View Result, Profile)
 - Search functionality for both roles
-
----
-
-## 🎓 Additional Examples
-
-### Complex Exam with Mixed Questions
-
-```bash
-curl -X POST http://localhost:3000/instructor/exam \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "examName": "Comprehensive Final Exam",
-    "courseCode": "CS201",
-    "courseName": "Data Structures",
-    "topicName": "All Topics",
-    "status": "published",
-    "questions": [
-      {
-        "questionText": "What is the time complexity of binary search?",
-        "typeCode": "MCQ",
-        "difficulty": "MEDIUM",
-        "points": 2,
-        "choices": [
-          {"text": "O(n)", "isCorrect": false},
-          {"text": "O(log n)", "isCorrect": true},
-          {"text": "O(n^2)", "isCorrect": false},
-          {"text": "O(1)", "isCorrect": false}
-        ]
-      },
-      {
-        "questionText": "A stack follows LIFO principle",
-        "typeCode": "TF",
-        "difficulty": "EASY",
-        "points": 1,
-        "choices": [
-          {"text": "True", "isCorrect": true},
-          {"text": "False", "isCorrect": false}
-        ]
-      },
-      {
-        "questionText": "Which data structure uses nodes with left and right pointers?",
-        "typeCode": "MCQ",
-        "difficulty": "HARD",
-        "points": 3,
-        "choices": [
-          {"text": "Array", "isCorrect": false},
-          {"text": "Linked List", "isCorrect": false},
-          {"text": "Binary Tree", "isCorrect": true},
-          {"text": "Stack", "isCorrect": false}
-        ]
-      }
-    ]
-  }'
-```
-
-### Batch Testing Multiple Students
-
-```bash
-# Register 3 students
-for i in {1..3}; do
-  curl -X POST http://localhost:3000/auth/register \
-    -H "Content-Type: application/json" \
-    -d "{
-      \"username\": \"student$i\",
-      \"email\": \"student$i@test.com\",
-      \"password\": \"pass$i\",
-      \"department\": \"CS\",
-      \"role\": \"student\",
-      \"studentId\": \"651000$i\"
-    }"
-done
-```
 
 ---
 

@@ -7,13 +7,14 @@ const { authenticateToken, requireStudent } = require('../middleware/auth');
 router.use(authenticateToken);
 router.use(requireStudent);
 
-// GET /api/student/dashboard - แสดงข้อสอบทั้งหมดและคะแนน
+// GET /api/student/dashboard - แสดงข้อสอบทั้งหมดและคะแนน (เพิ่ม CategoryName)
 router.get('/dashboard', async (req, res) => {
   try {
     const [exams] = await db.query(
       `SELECT 
         e.ExamID, 
         e.ExamName, 
+        sc.CategoryName,
         c.CourseCode, 
         c.CourseName, 
         t.TopicName,
@@ -26,6 +27,7 @@ router.get('/dashboard', async (req, res) => {
        FROM Exams e
        JOIN Courses c ON e.CourseID = c.CourseID
        JOIN Topics t ON e.TopicID = t.TopicID
+       LEFT JOIN SubjectCategories sc ON c.CategoryID = sc.CategoryID
        LEFT JOIN (
          SELECT ExamID, StudentID, Score, TotalPoints, Percentage, SubmitTime, AttemptID
          FROM ExamAttempts
@@ -49,7 +51,7 @@ router.get('/dashboard', async (req, res) => {
   }
 });
 
-// GET /api/student/search?q=keyword - ค้นหาข้อสอบ
+// GET /api/student/search?q=keyword - ค้นหาข้อสอบ (เพิ่ม CategoryName และเงื่อนไขค้นหา)
 router.get('/search', async (req, res) => {
   try {
     const keyword = req.query.q || '';
@@ -58,6 +60,7 @@ router.get('/search', async (req, res) => {
       `SELECT 
         e.ExamID, 
         e.ExamName, 
+        sc.CategoryName,
         c.CourseCode, 
         c.CourseName, 
         t.TopicName,
@@ -69,6 +72,7 @@ router.get('/search', async (req, res) => {
        FROM Exams e
        JOIN Courses c ON e.CourseID = c.CourseID
        JOIN Topics t ON e.TopicID = t.TopicID
+       LEFT JOIN SubjectCategories sc ON c.CategoryID = sc.CategoryID
        LEFT JOIN (
          SELECT ExamID, StudentID, Score, TotalPoints, Percentage, SubmitTime
          FROM ExamAttempts
@@ -81,9 +85,9 @@ router.get('/search', async (req, res) => {
          )
        ) ea ON ea.ExamID = e.ExamID
        WHERE e.Status = 'published'
-       AND (e.ExamName LIKE ? OR c.CourseName LIKE ? OR t.TopicName LIKE ?)
+       AND (e.ExamName LIKE ? OR c.CourseName LIKE ? OR t.TopicName LIKE ? OR sc.CategoryName LIKE ?)
        ORDER BY e.UpdatedAt DESC`,
-      [req.user.userId, req.user.userId, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`]
+      [req.user.userId, req.user.userId, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`]
     );
 
     res.json({ exams });
@@ -93,17 +97,18 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// GET /api/student/exam/:examId - ดูข้อสอบและเริ่มทำ
+// GET /api/student/exam/:examId - ดูข้อสอบและเริ่มทำ (เพิ่ม CategoryName)
 router.get('/exam/:examId', async (req, res) => {
   try {
     const { examId } = req.params;
 
-    // ดึงข้อมูล exam
     const [exams] = await db.query(
-      `SELECT e.*, c.CourseCode, c.CourseName, t.TopicName
+      `SELECT e.*, c.CourseCode, c.CourseName, t.TopicName,
+              sc.CategoryName
        FROM Exams e
        JOIN Courses c ON e.CourseID = c.CourseID
        JOIN Topics t ON e.TopicID = t.TopicID
+       LEFT JOIN SubjectCategories sc ON c.CategoryID = sc.CategoryID
        WHERE e.ExamID = ? AND e.Status = 'published'`,
       [examId]
     );
@@ -112,7 +117,7 @@ router.get('/exam/:examId', async (req, res) => {
       return res.status(404).json({ error: 'ไม่พบข้อสอบนี้หรือข้อสอบยังไม่เผยแพร่' });
     }
 
-    // ดึงคำถามและตัวเลือก (ไม่แสดงคำตอบที่ถูก)
+    // ดึงคำถามและตัวเลือก (ไม่แสดงเฉลย)
     const [questions] = await db.query(
       `SELECT q.QuestionID, q.QuestionText, q.OrderIndex, q.Points,
               qt.TypeCode, qt.TypeName,
@@ -125,7 +130,6 @@ router.get('/exam/:examId', async (req, res) => {
       [examId]
     );
 
-    // ดึง choices สำหรับแต่ละคำถาม (ไม่แสดง IsCorrect)
     for (let question of questions) {
       const [choices] = await db.query(
         `SELECT ChoiceID, ChoiceNo, ChoiceText
@@ -227,12 +231,11 @@ router.post('/exam/:examId/submit', async (req, res) => {
   }
 });
 
-// GET /api/student/exam/:examId/result/:attemptId - ดูเฉลย
+// GET /api/student/exam/:examId/result/:attemptId - ดูเฉลย (เพิ่ม CategoryName)
 router.get('/exam/:examId/result/:attemptId', async (req, res) => {
   try {
     const { examId, attemptId } = req.params;
 
-    // เช็คว่าเป็น attempt ของนิสิตคนนี้หรือไม่
     const [attempts] = await db.query(
       `SELECT * FROM ExamAttempts 
        WHERE AttemptID = ? AND ExamID = ? AND StudentID = ?`,
@@ -245,12 +248,13 @@ router.get('/exam/:examId/result/:attemptId', async (req, res) => {
 
     const attempt = attempts[0];
 
-    // ดึงข้อมูล exam
     const [exams] = await db.query(
-      `SELECT e.*, c.CourseCode, c.CourseName, t.TopicName
+      `SELECT e.*, c.CourseCode, c.CourseName, t.TopicName,
+              sc.CategoryName
        FROM Exams e
        JOIN Courses c ON e.CourseID = c.CourseID
        JOIN Topics t ON e.TopicID = t.TopicID
+       LEFT JOIN SubjectCategories sc ON c.CategoryID = sc.CategoryID
        WHERE e.ExamID = ?`,
       [examId]
     );
@@ -278,7 +282,6 @@ router.get('/exam/:examId/result/:attemptId', async (req, res) => {
       [attemptId, examId]
     );
 
-    // ดึง choices และเฉลย
     for (let question of questions) {
       const [choices] = await db.query(
         `SELECT ChoiceID, ChoiceNo, ChoiceText, IsCorrect
