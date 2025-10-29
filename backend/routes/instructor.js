@@ -124,7 +124,7 @@ router.post('/exam', async (req, res) => {
     const { examName, categoryName, courseCode, courseName, topicName, questions, status } = req.body; // <<<<<<< ADDED categoryName
 
 
-    // --- LOGIC ใหม่: สร้างหรือหา Category ---
+    // สร้างหรือหา Category ---
     let categoryId = null;
     if (categoryName) {
       let [categories] = await connection.query(
@@ -141,7 +141,7 @@ router.post('/exam', async (req, res) => {
         categoryId = categories[0].CategoryID;
       }
     }
-    // --- จบ LOGIC ใหม่ ---
+    // 
 
     // สร้างหรือหา Course
     let [courses] = await connection.query(
@@ -254,7 +254,7 @@ router.put('/exam/:examId', async (req, res) => {
     const { examId } = req.params;
     const { examName, status, categoryName, courseName, courseCode, topicName, questions } = req.body; // <<<<<<< ADDED categoryName
 
-    // ... (ส่วนตรวจสอบ Exams เหมือนเดิม) ...
+    // ตรวจสอบว่า exam นี้เป็นของ instructor คนนี้หรือไม่
     const [exams] = await connection.query(
       'SELECT * FROM Exams WHERE ExamID = ? AND InstructorID = ?',
       [examId, req.user.userId]
@@ -265,7 +265,7 @@ router.put('/exam/:examId', async (req, res) => {
     }
     const currentExam = exams[0];
 
-    // --- LOGIC ใหม่: สร้างหรือหา Category ---
+    // สร้างหรือหา Category
     let categoryId = null;
     if (categoryName) {
       let [categories] = await connection.query(
@@ -282,10 +282,9 @@ router.put('/exam/:examId', async (req, res) => {
         categoryId = categories[0].CategoryID;
       }
     }
-    // --- จบ LOGIC ใหม่ ---
 
 
-    // ✅ หา (หรือสร้างใหม่) Course (เพิ่ม CategoryID)
+    // หา (หรือสร้างใหม่) Course (เพิ่ม CategoryID)
     let [courses] = await connection.query(
       'SELECT CourseID FROM Courses WHERE CourseCode = ? OR CourseName = ?',
       [courseCode, courseName]
@@ -305,7 +304,7 @@ router.put('/exam/:examId', async (req, res) => {
     }
 
     
-    // ✅ หา (หรือสร้างใหม่) Topic
+    // หา (หรือสร้างใหม่) Topic
     let [topics] = await connection.query(
       'SELECT TopicID FROM Topics WHERE CourseID = ? AND TopicName = ?',
       [courseId, topicName]
@@ -322,7 +321,7 @@ router.put('/exam/:examId', async (req, res) => {
       topicId = topics[0].TopicID;
     }
 
-    // ✅ อัปเดตข้อมูลในตาราง Exams
+    // อัปเดตข้อมูลในตาราง Exams
     await connection.query(
       `UPDATE Exams 
        SET ExamName = ?, Status = ?, CourseID = ?, TopicID = ? 
@@ -336,10 +335,10 @@ router.put('/exam/:examId', async (req, res) => {
       ]
     );
 
-    // ✅ ลบคำถามเก่าทั้งหมด
+    // ลบคำถามเก่าทั้งหมด
     await connection.query('DELETE FROM Questions WHERE ExamID = ?', [examId]);
 
-    // ✅ เพิ่มคำถามใหม่
+    // พิ่มคำถามใหม่
     for (let i = 0; i < (questions || []).length; i++) {
       const q = questions[i];
 
