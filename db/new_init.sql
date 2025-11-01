@@ -32,10 +32,11 @@ DELETE FROM Users;
 -- Users (5)
 -- -------------------------------
 INSERT INTO Users (UserID, Username, Email, Password, Department, Role, StudentID, CreatedAt, UpdatedAt) VALUES
-(2,'teacher','teacher@example.com','$2b$10$IbB9i2Skjye7ABLPWvo.fucZT6Qps1iMVBAUo31qaYUqvc1tWrSeu','IT','instructor',NULL,NOW(),NOW()),
-(11,'student1','student1@example.com','$2b$10$IbB9i2Skjye7ABLPWvo.fucZT6Qps1iMVBAUo31qaYUqvc1tWrSeu','CS','student','66000001',NOW(),NOW()),
-(12,'student2','student2@example.com','$2b$10$IbB9i2Skjye7ABLPWvo.fucZT6Qps1iMVBAUo31qaYUqvc1tWrSeu','IT','student','66000002',NOW(),NOW()),
-(13,'student3','student3@example.com','$2b$10$IbB9i2Skjye7ABLPWvo.fucZT6Qps1iMVBAUo31qaYUqvc1tWrSeu','EE','student','66000003',NOW(),NOW());
+(1,'admin','admin@example.com','password123','Computer Engineering','instructor',NULL,NOW(),NOW()),
+(2,'teacher','teacher@example.com','password123','IT','instructor',NULL,NOW(),NOW()),
+(11,'student1','student1@example.com','password123','CS','student','66000001',NOW(),NOW()),
+(12,'student2','student2@example.com','password123','IT','student','66000002',NOW(),NOW()),
+(13,'student3','student3@example.com','password123','EE','student','66000003',NOW(),NOW());
 
 -- -------------------------------
 -- SubjectCategories (5) - NEW INSERT

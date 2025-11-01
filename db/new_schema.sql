@@ -304,8 +304,8 @@ DELIMITER ;
 -- ----------------------------------------------------------------
 -- 14. Default Admin / Instructor Example (UNCHANGED from original)
 -- ----------------------------------------------------------------
-INSERT INTO Users (Username, Email, Password, Department, Role)
-VALUES ('admin','admin@example.com','$2b$10$abcdefgh1234567890dummyhash','Computer Engineering','instructor');
+
+
 
 -- ----------------------------------------------------------------
 -- DONE
