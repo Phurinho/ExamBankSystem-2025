@@ -447,9 +447,9 @@ router.put('/profile', async (req, res) => {
       params.push(email);
     }
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
+      // const hashedPassword = await bcrypt.hash(password, 10);
       updates.push('Password = ?');
-      params.push(hashedPassword);
+      params.push(password);
     }
     if (department) {
       updates.push('Department = ?');
