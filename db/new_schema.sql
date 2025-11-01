@@ -16,6 +16,36 @@ CREATE DATABASE IF NOT EXISTS exam_bank
   COLLATE utf8mb4_unicode_ci;
 
 USE exam_bank;
+-- ----------------------------------------------------------------
+-- A. Cleanup existing objects (views/procedures/tables) safely
+-- ----------------------------------------------------------------
+-- Drop views first (they depend on tables)
+DROP VIEW IF EXISTS vw_student_exam_list;
+DROP VIEW IF EXISTS vw_instructor_exam_list;
+
+-- Drop procedures/functions next
+DROP PROCEDURE IF EXISTS sp_calculate_exam_score;
+
+-- Disable FK checks to drop in any order without dependency errors
+SET @old_fk_check = @@FOREIGN_KEY_CHECKS;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Drop tables in reverse dependency order
+DROP TABLE IF EXISTS StudentAnswers;
+DROP TABLE IF EXISTS ExamAttempts;
+DROP TABLE IF EXISTS Choices;
+DROP TABLE IF EXISTS Questions;
+DROP TABLE IF EXISTS Exams;
+DROP TABLE IF EXISTS Topics;
+DROP TABLE IF EXISTS Courses;
+DROP TABLE IF EXISTS SubjectCategories;
+DROP TABLE IF EXISTS DifficultyLevels;
+DROP TABLE IF EXISTS QuestionTypes;
+DROP TABLE IF EXISTS Users;
+
+-- Restore FK checks
+SET FOREIGN_KEY_CHECKS = @old_fk_check;
+
 
 -- ----------------------------------------------------------------
 -- 1. Users
