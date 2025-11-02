@@ -1,0 +1,22 @@
+# Detected Endpoints from Uploaded Backend (auto-scan)
+
+- **DELETE** /exam/:examId  _(from `ExamBankSystem-2025-backend-branch/backend/routes/instructor.js`)_
+- **DELETE** /profile  _(from `ExamBankSystem-2025-backend-branch/backend/routes/instructor.js`)_
+- **DELETE** /profile  _(from `ExamBankSystem-2025-backend-branch/backend/routes/student.js`)_
+- **GET** /  _(from `ExamBankSystem-2025-backend-branch/backend/server.js`)_
+- **GET** /dashboard  _(from `ExamBankSystem-2025-backend-branch/backend/routes/instructor.js`)_
+- **GET** /dashboard  _(from `ExamBankSystem-2025-backend-branch/backend/routes/student.js`)_
+- **GET** /exam/:examId  _(from `ExamBankSystem-2025-backend-branch/backend/routes/instructor.js`)_
+- **GET** /exam/:examId  _(from `ExamBankSystem-2025-backend-branch/backend/routes/student.js`)_
+- **GET** /exam/:examId/result/:attemptId  _(from `ExamBankSystem-2025-backend-branch/backend/routes/student.js`)_
+- **GET** /profile  _(from `ExamBankSystem-2025-backend-branch/backend/routes/instructor.js`)_
+- **GET** /profile  _(from `ExamBankSystem-2025-backend-branch/backend/routes/student.js`)_
+- **GET** /search  _(from `ExamBankSystem-2025-backend-branch/backend/routes/instructor.js`)_
+- **GET** /search  _(from `ExamBankSystem-2025-backend-branch/backend/routes/student.js`)_
+- **POST** /exam  _(from `ExamBankSystem-2025-backend-branch/backend/routes/instructor.js`)_
+- **POST** /exam/:examId/submit  _(from `ExamBankSystem-2025-backend-branch/backend/routes/student.js`)_
+- **POST** /login  _(from `ExamBankSystem-2025-backend-branch/backend/routes/auth.js`)_
+- **POST** /register  _(from `ExamBankSystem-2025-backend-branch/backend/routes/auth.js`)_
+- **PUT** /exam/:examId  _(from `ExamBankSystem-2025-backend-branch/backend/routes/instructor.js`)_
+- **PUT** /profile  _(from `ExamBankSystem-2025-backend-branch/backend/routes/instructor.js`)_
+- **PUT** /profile  _(from `ExamBankSystem-2025-backend-branch/backend/routes/student.js`)_

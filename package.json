@@ -1,0 +1,23 @@
+{
+  "name": "exambank-2025",
+  "private": true,
+  "scripts": {
+    "install:all": "npm --prefix server i && npm --prefix client i",
+    "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "nodemon": "^3.1.10"
+  },
+  "dependencies": {
+    "sweetalert2": "^11.26.3"
+  },
+  "version": "1.0.0",
+  "description": "npm install bcrypt bcryptjs cors dotenv express express-rate-limit helmet jsonwebtoken morgan mysql2",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
