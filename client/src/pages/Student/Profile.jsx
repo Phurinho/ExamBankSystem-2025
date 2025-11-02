@@ -1,20 +1,22 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useContext } from 'react'
 import { FaSave, FaUserGraduate, FaTrash, FaArrowLeft } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
-import { StudentAPI } from '../../api'  // ✅ ใช้ API รวมทั้งหมด
+import { StudentAPI } from '../../api'
+import { AuthContext } from '../../context/AuthContext' // ✅ ดึง context
 
 export default function StudentProfile() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const token = localStorage.getItem('token')
+  const { user, setUser } = useContext(AuthContext) // ✅ ใช้ context
+  const token = user?.token || localStorage.getItem('token')
   const navigate = useNavigate()
 
   // ✅ โหลดข้อมูลโปรไฟล์นักศึกษา
   const loadProfile = async () => {
     try {
-      const res = await StudentAPI.getProfile(token) // ✅ ใช้ API แทน axios.get
+      const res = await StudentAPI.getProfile(token)
       setProfile(res.data.user)
     } catch (err) {
       console.error('❌ Load profile failed:', err)
@@ -37,9 +39,18 @@ export default function StudentProfile() {
         studentId: profile.StudentID
       }
 
-      const res = await StudentAPI.updateProfile(payload, token)
+      await StudentAPI.updateProfile(payload, token)
       alert('Profile updated successfully!')
-      console.log('✅ Updated:', res.data)
+
+      // ✅ อัปเดต AuthContext + localStorage ให้ชื่อใหม่ sync ทุกหน้า
+      setUser((prev) => ({
+        ...prev,
+        username: profile.Username
+      }))
+      localStorage.setItem('username', profile.Username)
+
+      // ✅ กลับไป Dashboard เพื่อให้เห็นชื่อใหม่ทันที
+      navigate('/student/dashboard', { replace: true })
     } catch (err) {
       console.error('❌ Save failed:', err.response?.data || err)
       alert(err.response?.data?.error || 'Failed to save profile.')
@@ -171,7 +182,7 @@ export default function StudentProfile() {
         </div>
       </div>
 
-      {/* ✅ Modal ยืนยันลบบัญชี */}
+      {/* Modal ยืนยันลบ */}
       {showDeleteModal && (
         <div className="modal show fade d-block" tabIndex="-1">
           <div className="modal-dialog modal-dialog-centered">

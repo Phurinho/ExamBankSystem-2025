@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useContext } from 'react'
 import { ROLES } from '../../utils/constants'
 import Modal from 'react-bootstrap/Modal'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { useNavigate } from 'react-router'
 import Swal from 'sweetalert2'
-import { AuthAPI } from '../../api' // ✅ import จาก api.js
+import { AuthAPI } from '../../api'
+import { AuthContext } from '../../context/AuthContext' // ✅ เพิ่ม
 
 export default function Home() {
   const navigate = useNavigate()
+  const { setUser } = useContext(AuthContext) // ✅ เพิ่ม
+
   const [loginData, setLoginData] = useState({ username: '', password: '' })
   const [registerData, setRegisterData] = useState({
     username: '',
@@ -19,7 +22,6 @@ export default function Home() {
   })
   const [showRegister, setShowRegister] = useState(false)
 
-  // ✅ handle input change
   const handleLoginChange = (e) => {
     const { name, value } = e.target
     setLoginData(prev => ({ ...prev, [name]: value }))
@@ -41,7 +43,6 @@ export default function Home() {
   // ✅ Login
   const handleLoginSubmit = async (e) => {
     e.preventDefault()
-
     try {
       const res = await AuthAPI.login({
         username: loginData.username.trim(),
@@ -49,16 +50,15 @@ export default function Home() {
       })
 
       const data = res.data
-      console.log('✅ Login success:', data)
-
       const role = data.user.role || data.user.Role
       const username = data.user.username || data.user.Username
       const token = data.token
 
-      // เก็บ token และข้อมูลผู้ใช้
+      // ✅ บันทึกลง localStorage และ context
       localStorage.setItem('token', token)
       localStorage.setItem('role', role)
       localStorage.setItem('username', username)
+      setUser({ token, role, username }) // ✅ สำคัญ
 
       Swal.fire({
         icon: 'success',
@@ -68,17 +68,14 @@ export default function Home() {
         showConfirmButton: false
       })
 
-      // redirect
-      setTimeout(() => {
-        if (role === 'instructor' || role === 'admin') {
-  navigate('/instructor/dashboard')
-} else if (role === 'student') {
-  navigate('/student/dashboard')
-} else {
-  Swal.fire('Unknown role', '', 'error')
-}
-
-      }, 1500)
+      // ✅ redirect ตาม role
+      if (role === 'instructor' || role === 'admin') {
+        navigate('/instructor/dashboard')
+      } else if (role === 'student') {
+        navigate('/student/dashboard')
+      } else {
+        Swal.fire('Unknown role', '', 'error')
+      }
     } catch (err) {
       console.error('❌ Login error:', err)
       Swal.fire({
@@ -123,18 +120,6 @@ export default function Home() {
       })
     }
   }
-
-  // ✅ ถ้ามี token อยู่แล้ว -> redirect ทันที
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    const role = localStorage.getItem('role')
-
-    if (token && role) {
-      if (role === 'student') navigate('/student/dashboard', { replace: true })
-      if (role === 'instructor') navigate('/instructor/dashboard', { replace: true })
-      if (role === 'admin') navigate('/instructor/dashboard', { replace: true })
-    }
-  }, [navigate])
 
   return (
     <div className="bg-light min-vh-100 d-flex flex-column justify-content-start align-items-center pt-5">

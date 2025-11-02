@@ -95,6 +95,20 @@ useEffect(() => {
     return () => clearTimeout(delay)
   }, [filters.search])
 
+ // ✅ ฟังก์ชันลบข้อสอบ
+  const deleteExam = async (examId) => {
+    if (!window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อสอบนี้?')) return
+    try {
+      await InstructorAPI.deleteExam(examId, token)
+      setExams(prev => prev.filter(e => e.ExamID !== examId))
+      setFilteredExams(prev => prev.filter(e => e.ExamID !== examId))
+      alert('🗑️ ลบข้อสอบเรียบร้อยแล้ว')
+    } catch (err) {
+      console.error('❌ Delete failed:', err)
+      alert('ลบข้อสอบไม่สำเร็จ')
+    }
+  }
+
   // ===================== UI =====================
   return (
     <div className="container py-5">
@@ -262,7 +276,7 @@ useEffect(() => {
                   </button>
                   <button
                     className="btn btn-sm btn-outline-danger"
-                    onClick={() => alert('Delete function here')}
+                    onClick={() => deleteExam(exam.ExamID)}
                   >
                     <FaTrash />
                   </button>

@@ -4,17 +4,23 @@ import { AuthContext } from '../context/AuthContext.jsx'
 
 export default function ProtectedRoute({ role }) {
   const { user } = useContext(AuthContext)
-
-  // ถ้าไม่มี token ใน localStorage หรือ user ไม่มีค่า → กลับไปหน้า login
   const token = localStorage.getItem('token')
+
+  // ❌ ถ้าไม่มี token หรือ user → กลับหน้า Login
   if (!token || !user) {
     return <Navigate to="/" replace />
   }
 
-  // ถ้ามี role แต่ไม่ตรงกับที่ต้องการ เช่น student ไปหน้า instructor → เด้งกลับ
-  if (role && user.role !== role) {
+  // ✅ Logic role ยืดหยุ่น: ให้ admin เข้าหน้าที่ของ instructor ได้ด้วย
+  const isAuthorized =
+    !role ||                      // ถ้าไม่กำหนด role → เข้าได้หมด
+    user.role === role ||         // role ตรงกันเป๊ะ
+    (role === 'instructor' && user.role === 'admin') // admin เข้าหน้าที่ instructor ได้
+
+  if (!isAuthorized) {
     return <Navigate to="/" replace />
   }
 
+  // ✅ ผ่านทุกเงื่อนไข → แสดงหน้าได้
   return <Outlet />
 }

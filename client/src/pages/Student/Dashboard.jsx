@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useContext } from 'react'
 import { FaUserGraduate, FaSearch, FaSignOutAlt } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
-import { StudentAPI } from '../../api' // ✅ ใช้ API กลางแทน axios
+import { StudentAPI } from '../../api'
+import { AuthContext } from '../../context/AuthContext' // ✅ ดึง context มาใช้
 import 'bootstrap/dist/css/bootstrap.min.css'
 
 export default function StudentDashboard() {
@@ -10,13 +11,15 @@ export default function StudentDashboard() {
   const [filters, setFilters] = useState({ exam: '', course: '', category: '', search: '' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const token = localStorage.getItem('token')
-  const username = localStorage.getItem('username') || 'Student'
+  const { user, logout } = useContext(AuthContext) // ✅ ดึง user และ logout จาก context
+  const token = user?.token
+  const username = user?.username || 'Student' // ✅ ใช้ค่าจาก context
   const navigate = useNavigate()
 
   // โหลดข้อมูลจาก StudentAPI
   const loadExams = async () => {
     try {
+      if (!token) return
       console.log('Loading exams with token:', token)
       const res = await StudentAPI.getDashboard(token)
       const data = res.data?.exams || []
@@ -30,7 +33,7 @@ export default function StudentDashboard() {
     }
   }
 
-  useEffect(() => { loadExams() }, [])
+  useEffect(() => { loadExams() }, [token]) // ✅ โหลดใหม่เมื่อ token เปลี่ยน
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -53,11 +56,6 @@ export default function StudentDashboard() {
     setFilteredExams(filtered)
   }
 
-  const handleLogout = () => {
-    localStorage.clear()
-    navigate('/')
-  }
-
   if (loading) return <div className="text-center mt-5">Loading exams...</div>
   if (error) return <div className="text-center text-danger mt-5">{error}</div>
 
@@ -72,77 +70,75 @@ export default function StudentDashboard() {
           <button className="btn btn-outline-secondary" onClick={() => navigate('/student/profile')}>
             <FaUserGraduate className="me-2" /> Student Profile
           </button>
-          <button className="btn btn-outline-danger" onClick={handleLogout}>
+          <button className="btn btn-outline-danger" onClick={logout}>
             <FaSignOutAlt className="me-2" /> Logout
           </button>
         </div>
       </div>
 
-      
       {/* Filter Section */}
-<div className="card p-3 mb-4 shadow-sm">
-  <div className="row g-3 align-items-center">
+      <div className="card p-3 mb-4 shadow-sm">
+        <div className="row g-3 align-items-center">
 
-    {/* Exam Name */}
-    <div className="col-md-3">
-      <label className="form-label">Exam</label>
-      <input
-        className="form-control"
-        value={filters.exam}
-        onChange={e => handleFilterChange('exam', e.target.value)}
-        placeholder="Filter by exam"
-      />
-    </div>
+          {/* Exam Name */}
+          <div className="col-md-3">
+            <label className="form-label">Exam</label>
+            <input
+              className="form-control"
+              value={filters.exam}
+              onChange={e => handleFilterChange('exam', e.target.value)}
+              placeholder="Filter by exam"
+            />
+          </div>
 
-    {/* Category Dropdown */}
-    <div className="col-md-3">
-      <label className="form-label">Category</label>
-      <select
-        className="form-select"
-        value={filters.category}
-        onChange={e => handleFilterChange('category', e.target.value)}
-      >
-        <option value="">All Categories</option>
-        {[...new Set(exams.map(e => e.CategoryName).filter(Boolean))].map((cat, i) => (
-          <option key={i} value={cat}>{cat}</option>
-        ))}
-      </select>
-    </div>
+          {/* Category Dropdown */}
+          <div className="col-md-3">
+            <label className="form-label">Category</label>
+            <select
+              className="form-select"
+              value={filters.category}
+              onChange={e => handleFilterChange('category', e.target.value)}
+            >
+              <option value="">All Categories</option>
+              {[...new Set(exams.map(e => e.CategoryName).filter(Boolean))].map((cat, i) => (
+                <option key={i} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
 
-    {/* Course Dropdown */}
-    <div className="col-md-3">
-      <label className="form-label">Course</label>
-      <select
-        className="form-select"
-        value={filters.course}
-        onChange={e => handleFilterChange('course', e.target.value)}
-      >
-        <option value="">All Courses</option>
-        {[...new Set(exams.map(e => e.CourseName).filter(Boolean))].map((course, i) => (
-          <option key={i} value={course}>{course}</option>
-        ))}
-      </select>
-    </div>
+          {/* Course Dropdown */}
+          <div className="col-md-3">
+            <label className="form-label">Course</label>
+            <select
+              className="form-select"
+              value={filters.course}
+              onChange={e => handleFilterChange('course', e.target.value)}
+            >
+              <option value="">All Courses</option>
+              {[...new Set(exams.map(e => e.CourseName).filter(Boolean))].map((course, i) => (
+                <option key={i} value={course}>{course}</option>
+              ))}
+            </select>
+          </div>
 
-    {/* Search bar */}
-    <div className="col-md-3">
-      <label className="form-label">Search</label>
-      <div className="input-group">
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Search anything..."
-          value={filters.search}
-          onChange={e => handleFilterChange('search', e.target.value)}
-        />
-        <button className="btn btn-outline-dark" onClick={applyFilter}>
-          <FaSearch />
-        </button>
+          {/* Search bar */}
+          <div className="col-md-3">
+            <label className="form-label">Search</label>
+            <div className="input-group">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search anything..."
+                value={filters.search}
+                onChange={e => handleFilterChange('search', e.target.value)}
+              />
+              <button className="btn btn-outline-dark" onClick={applyFilter}>
+                <FaSearch />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
-
 
       {/* Table */}
       <table className="table table-bordered text-center align-middle shadow-sm">

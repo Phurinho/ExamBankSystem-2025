@@ -34,6 +34,18 @@ export default function AppRouter() {
 
         </Route>
       </Route>
+      {/* admin */}
+      <Route element={<ProtectedRoute role="admin" />}>
+        <Route element={<InstructorLayout />}>
+          <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
+          <Route path="/instructor/profile" element={<InstructorProfile />} />
+          <Route path="/instructor/create" element={<CreateExam />} />
+          <Route path="/instructor/exam/:id" element={<ViewExam />} />
+          <Route path="/instructor/exam/:id/edit" element={<EditExam />} />
+
+
+        </Route>
+      </Route>
 
       {/* Student */}
       <Route element={<ProtectedRoute role="student" />}>
